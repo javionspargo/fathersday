@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Happy Father's Day</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    @keyframes blink { 0%, 60% { opacity: 1; } 61%, 90% { opacity: 0; } 100% { opacity: 1; } }
+    @keyframes spinCW { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+    @keyframes spinCCW { from { transform: rotate(360deg);} to { transform: rotate(0deg);} }
+    @keyframes fall { 0% { transform: translateY(-110vh) rotate(0deg); }
+                      100% { transform: translateY(110vh) rotate(540deg);} }
+
+    html, body { margin: 0; height: 100%; background: #f7fbff;
+      font-family: "Comic Sans MS", "Comic Sans", system-ui, sans-serif; color: #222; text-align: center; }
+    h1 { font-size: 28px; margin: 16px 0 8px; }
+    .stage { position: absolute; top: 64px; bottom: 56px; left: 20px; right: 20px; display: grid; place-items: center; }
+    .frame { position: relative; width: min(88vmin, 820px); height: min(88vmin, 820px);
+      display: grid; place-items: center; background: #fff; border-radius: 8px;
+      box-shadow: 0 0 0 8px #111, 0 0 0 18px #e8eef6, 0 12px 30px rgba(0,0,0,0.12); }
+    .center-img { width: 58%; animation: blink 1.2s steps(1,end) infinite; }
+
+    .strip { position: absolute; display: flex; gap: 4px; }
+    .strip img { width: 60px; height: 60px; object-fit: cover; border: 2px solid #111; border-radius: 4px; }
+    .top { top: -34px; left: 26px; right: 26px; justify-content: space-between; }
+    .bottom { bottom: -34px; left: 26px; right: 26px; justify-content: space-between; }
+    .left { top: 26px; bottom: 26px; left: -34px; flex-direction: column; justify-content: space-between; }
+    .right { top: 26px; bottom: 26px; right: -34px; flex-direction: column; justify-content: space-between; }
+    .top img { animation: spinCW 6s linear infinite; }
+    .bottom img { animation: spinCCW 6s linear infinite; }
+    .left img { animation: spinCCW 6.5s linear infinite; }
+    .right img { animation: spinCW 6.5s linear infinite; }
+
+    .controls { position: fixed; bottom: 10px; left: 0; right: 0; display: grid; place-items: center; }
+    #claimBtn { font-family: inherit; font-size: 14px; padding: 8px 12px; border: 2px solid #111;
+      background: #fff; border-radius: 6px; cursor: pointer; }
+
+    .confetti { position: fixed; top: 0; pointer-events: none; font-size: 14px; opacity: 0.9; animation: fall linear forwards; }
+  </style>
+</head>
+<body>
+  <h1>Happy Father's Day</h1>
+
+  <div class="stage">
+    <div class="frame">
+      <img class="center-img" src="father.png" alt="Dad" />
+      <div class="strip top" id="top-strip"></div>
+      <div class="strip bottom" id="bottom-strip"></div>
+      <div class="strip left" id="left-strip"></div>
+      <div class="strip right" id="right-strip"></div>
+    </div>
+  </div>
+
+  <!-- No controls, loop forever. Autoplay is attempted; many browsers require interaction first. -->
+  <audio id="loop-audio" src="congrats.mp3" loop autoplay playsinline></audio>
+
+  <div class="controls">
+    <button id="claimBtn"><a href="https://egiftit.com.au/receivedgiftcard/?AUxn7k-73196z4-bUlzTQNJYRJmFws2BQ==">🎁 Claim Prize</a></button>
+  </div>
+
+  <script>
+    // Build the frame
+    function createStripImages(container, count) {
+      for (let i = 0; i < count; i++) {
+        const img = document.createElement('img');
+        img.src = 'father.png'; img.alt = 'Frame image';
+        container.appendChild(img);
+      }
+    }
+    const topStrip = document.getElementById('top-strip');
+    const bottomStrip = document.getElementById('bottom-strip');
+    const leftStrip = document.getElementById('left-strip');
+    const rightStrip = document.getElementById('right-strip');
+    const horizontalCount = Math.max(5, Math.floor(window.innerWidth / 170));
+    const verticalCount = Math.max(5, Math.floor(window.innerHeight / 170));
+    createStripImages(topStrip, horizontalCount);
+    createStripImages(bottomStrip, horizontalCount);
+    createStripImages(leftStrip, verticalCount);
+    createStripImages(rightStrip, verticalCount);
+
+    // Confetti gentle trickle + burst
+    const confettiChars = ['🎉','✨','🎈'];
+    function spawnConfetti() {
+      const conf = document.createElement('span');
+      conf.className = 'confetti';
+      conf.textContent = confettiChars[Math.floor(Math.random()*confettiChars.length)];
+      conf.style.left = Math.random()*100 + 'vw';
+      conf.style.animationDuration = (7 + Math.random()*5) + 's';
+      conf.style.fontSize = (12 + Math.random()*8) + 'px';
+      document.body.appendChild(conf);
+      setTimeout(() => conf.remove(), 13000);
+    }
+    const trickle = setInterval(spawnConfetti, 600);
+    function burst(n=40) { for (let i=0;i<n;i++) setTimeout(spawnConfetti, i*30); }
+
+    // Audio: try to keep it playing, with no visible controls
+    const audio = document.getElementById('loop-audio');
+
+    // If the user (or browser) pauses it, resume.
+    audio.addEventListener('pause', () => {
+      // Attempt to immediately resume
+      audio.play().catch(()=>{});
+    });
+
+    // Helper to satisfy autoplay policies: start on first interaction if needed.
+    let armed = true;
+    async function ensurePlay() {
+      if (!armed) return;
+      try {
+        audio.muted = false;
+        audio.volume = 1.0;
+        await audio.play();
+        armed = false;
+        window.removeEventListener('click', ensurePlay, true);
+        window.removeEventListener('keydown', ensurePlay, true);
+      } catch(e) {
+        // ignore; will try again on next interaction
+      }
+    }
+    window.addEventListener('click', ensurePlay, true);
+    window.addEventListener('keydown', ensurePlay, true);
+
+    // Claim Prize button: starts audio (if not already), shows "prize", and bursts confetti
+    document.getElementById('claimBtn').addEventListener('click', async () => {
+      await ensurePlay();
+      burst(60);
+    });
+
+    // Initial attempt to autoplay (may be blocked until interaction)
+    (async () => { try { await audio.play(); } catch(e){} })();
+  </script>
+</body>
+</html>
